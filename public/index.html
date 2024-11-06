@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Real-Time Airtable Data with Vue.js</title>
+  <style>
+    body { font-family: Arial, sans-serif; }
+    #app { margin: 20px; }
+    .record { padding: 10px; border: 1px solid #ddd; margin-bottom: 10px; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/vue@3.0.0/dist/vue.global.min.js"></script>
+</head>
+<body>
+  <h1>Real-Time Airtable Data with Vue.js</h1>
+
+  <div id="app">
+    <form @submit.prevent="sendUrl">
+      <label for="url">Enter Airtable URL:</label>
+      <input v-model="clientUrl" id="url" placeholder="Enter Airtable URL" required>
+      <button type="submit">Fetch Data</button>
+    </form>
+
+    <div v-if="records.length > 0">
+      <div v-for="record in records" :key="record.id" class="record">
+        <p><strong>ID:</strong> {{ record.id }}</p>
+        <p><strong>Fields:</strong> {{ record.fields }}</p>
+      </div>
+    </div>
+    <p v-else>Loading data...</p>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+
+    const app = Vue.createApp({
+      data() {
+        return {
+          clientUrl: '',
+          records: []
+        };
+      },
+      methods: {
+        async sendUrl() {
+          try {
+            // Send URL to the server
+            await fetch('/fetch-data', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ url: this.clientUrl })
+            });
+          } catch (error) {
+            console.error('Failed to send URL to server:', error);
+          }
+        }
+      },
+      mounted() {
+        // Listen for real-time data updates
+        socket.on('dataUpdate', (data) => {
+          this.records = data.records;
+        });
+      }
+    });
+
+    app.mount('#app');
+  </script>
+</body>
+</html>
